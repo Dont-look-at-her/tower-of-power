@@ -230,9 +230,6 @@ await handle_level_up(winner, winner_data, ctx.channel)
 
 update_leaderboard()
 
-@bot.command()
-
-@bot.command()
 async def handle_level_up(user, user_data, channel):
     level = user_data["level"]
     xp_needed = min(50 + (level - 1) * 50, 500)
