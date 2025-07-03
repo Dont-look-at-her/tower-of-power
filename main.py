@@ -60,7 +60,12 @@ async def on_message(message):
     if user["xp"] >= required_xp:
         user["level"] += 1
         user["height"] = get_base_height(user["level"])
-        await message.channel.send(f"🧙‍♂️ {message.author.display_name} leveled up to Level {user['level']}! Tower Height: {user['height']}ft — {get_level_title(user['level'])}")
+        embed = discord.Embed(
+            title="📈 Tower Level Up!",
+            description=f"**{message.author.display_name}** has reached **Level {user['level']}**!\n\nTheir tower now stands **{user['height']}ft tall**.\nTitle: *{get_level_title(user['level'])}*",
+            color=discord.Color.purple()
+        )
+        await message.channel.send(embed=embed)
     update_leaderboard()
     await bot.process_commands(message)
 
@@ -76,7 +81,12 @@ async def on_reaction_add(reaction, user):
 async def towerstats(ctx):
     ensure_user(ctx.author)
     user = user_data[ctx.author.id]
-    await ctx.send(f"🧙‍♂️ {ctx.author.display_name} — Level: {user['level']}, XP: {user['xp']}, Tower Height: {user['height']}ft")
+    embed = discord.Embed(
+        title=f"📊 {ctx.author.display_name}'s Tower Stats",
+        description=f"**Level:** {user['level']}\n**XP:** {user['xp']}\n**Height:** {user['height']}ft\n**Title:** {get_level_title(user['level'])}",
+        color=discord.Color.blue()
+    )
+    await ctx.send(embed=embed)
 
 @bot.command()
 async def duel(ctx, target: discord.Member):
@@ -97,18 +107,31 @@ async def duel(ctx, target: discord.Member):
         gained = max(0, t_data["height"] - get_base_height(t_data["level"]))
         c_data["height"] += gained
         t_data["height"] = get_base_height(t_data["level"])
-        await ctx.send(f"⚔️ {challenger.display_name} has defeated {target.display_name} and absorbed {gained}ft of tower!")
+        embed = discord.Embed(title="⚔️ Tower Duel Results", color=discord.Color.green())
+        embed.add_field(name="Victory!", value=f"{challenger.display_name} has defeated {target.display_name}!", inline=False)
+        embed.add_field(name="Spoils of War", value=f"{challenger.display_name} absorbs {gained}ft and rises even higher.", inline=False)
+        embed.add_field(name="The Fallen", value=f"{target.display_name} returns to a humble {get_base_height(t_data['level'])}ft base but keeps their Level {t_data['level']} experience 😔", inline=False)
+        await ctx.send(embed=embed)
     elif outcome == "target":
         gained = max(0, c_data["height"] - get_base_height(c_data["level"]))
         t_data["height"] += gained
         c_data["height"] = get_base_height(c_data["level"])
-        await ctx.send(f"⚔️ {target.display_name} has turned the tables and absorbed {gained}ft from {challenger.display_name}!")
+        embed = discord.Embed(title="⚔️ Tower Duel Results", color=discord.Color.red())
+        embed.add_field(name="Reversal!", value=f"{target.display_name} has turned the tables and defeated {challenger.display_name}!", inline=False)
+        embed.add_field(name="Spoils of War", value=f"{target.display_name} absorbs {gained}ft and grows even stronger.", inline=False)
+        embed.add_field(name="The Fallen", value=f"{challenger.display_name} returns to a humble {get_base_height(c_data['level'])}ft base but keeps their Level {c_data['level']} experience 😔", inline=False)
+        await ctx.send(embed=embed)
     else:
         for member in [challenger, target]:
             data = user_data[member.id]
             loss = int((data["height"] * 0.1) + 0.999)
             data["height"] = max(get_base_height(data["level"]), data["height"] - loss)
-        await ctx.send("🗼 The Tower strikes! Both duelers lose 10% of their tower height.")
+        embed = discord.Embed(
+            title="🗼 The Tower Strikes!",
+            description="Both duelers lose 10% of their height... The Tower demands balance.",
+            color=discord.Color.dark_gold()
+        )
+        await ctx.send(embed=embed)
 
     update_leaderboard()
 
@@ -116,4 +139,3 @@ async def duel(ctx, target: discord.Member):
 async def faq(ctx):
     await ctx.send("Welcome to Tower of Power! Message or react to grow your tower. Duel others to absorb their height. Levels increase your tower. Anyone can challenge 3rd place, and 2nd place can challenge 1st. Use !duel @user and !towerstats to play.")
 
-bot.run(TOKEN)
