@@ -56,20 +56,23 @@ async def on_ready():
 async def on_message(message):
     if message.author.bot:
         return
-    ensure_user(message.author)
-    user = user_data[message.author.id]
-    user["xp"] += 1
-    required_xp = get_required_xp(user["level"] + 1)
-    if user["xp"] >= required_xp:
-        user["level"] += 1
-        user["height"] = get_base_height(user["level"])
-        embed = discord.Embed(
-            title="📈 Tower Level Up!",
-            description=f"**{message.author.display_name}** has reached **Level {user['level']}**!\n\nTheir tower now stands **{user['height']}ft tall**.\nTitle: *{get_level_title(user['level'])}*",
-            color=discord.Color.purple()
-        )
-        await message.channel.send(embed=embed)
-    update_leaderboard()
+
+    user = message.author
+    user_id = str(user.id)
+
+    # Register user if not exists
+    if user_id not in tower_data:
+        tower_data[user_id] = {"level": 1, "xp": 0, "height": 10}
+
+    user_data = tower_data[user_id]
+    user_data["xp"] += 5  # 💥 +5 XP per message
+
+    await handle_level_up(user, user_data, message.channel)
+
+    # Save data
+    with open("tower_data.json", "w") as f:
+        json.dump(tower_data, f, indent=2)
+
     await bot.process_commands(message)
 
 @bot.event
