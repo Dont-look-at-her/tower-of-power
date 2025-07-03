@@ -132,58 +132,75 @@ async def leaderboard(ctx):
     embed.set_footer(text=f"Updated just now • {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC")
     await ctx.send(embed=embed)
 
-@bot.command()
-async def duel(ctx, target: discord.Member):
-    challenger = ctx.author
-    if target.bot or challenger == target:
-        await ctx.send("You can't duel that target.")
+@bot.command(name="duel")
+async def duel(ctx, opponent: discord.Member):
+    attacker = ctx.author
+    if opponent == attacker:
+        await ctx.send("You cannot duel yourself, fool.")
         return
 
-    ensure_user(challenger)
-    ensure_user(target)
+    attacker_id = str(attacker.id)
+    opponent_id = str(opponent.id)
 
-    c_data = user_data[challenger.id]
-    t_data = user_data[target.id]
+    # Register users if needed
+    for user_id in [attacker_id, opponent_id]:
+        if user_id not in tower_data:
+            tower_data[user_id] = {"level": 1, "xp": 0, "height": 10}
 
-    outcome = random.choices(["challenger", "target", "tower"], weights=[30, 30, 40])[0]
+    attacker_data = tower_data[attacker_id]
+    opponent_data = tower_data[opponent_id]
 
-    if outcome == "challenger":
-        gained = max(0, t_data["height"] - get_base_height(t_data["level"]))
-        c_data["height"] += gained
-        t_data["height"] = get_base_height(t_data["level"])
-        embed = discord.Embed(title="⚔️ Tower Duel Results", color=discord.Color.green())
-        embed.add_field(name="Victory!", value=f"{challenger.display_name} has defeated {target.display_name}!", inline=False)
-        embed.add_field(name="Spoils of War", value=f"{challenger.display_name} absorbs {gained}ft and rises even higher.", inline=False)
-        embed.add_field(name="The Fallen", value=f"{target.display_name} returns to a humble {get_base_height(t_data['level'])}ft base but keeps their Level {t_data['level']} experience 😔", inline=False)
-        await ctx.send(embed=embed)
-    elif outcome == "target":
-        gained = max(0, c_data["height"] - get_base_height(c_data["level"]))
-        t_data["height"] += gained
-        c_data["height"] = get_base_height(c_data["level"])
-        embed = discord.Embed(title="⚔️ Tower Duel Results", color=discord.Color.red())
-        embed.add_field(name="Reversal!", value=f"{target.display_name} has turned the tables and defeated {challenger.display_name}!", inline=False)
-        embed.add_field(name="Spoils of War", value=f"{target.display_name} absorbs {gained}ft and grows even stronger.", inline=False)
-        embed.add_field(name="The Fallen", value=f"{challenger.display_name} returns to a humble {get_base_height(c_data['level'])}ft base but keeps their Level {c_data['level']} experience 😔", inline=False)
-        await ctx.send(embed=embed)
-    else:
-        for member in [challenger, target]:
-            data = user_data[member.id]
-            loss = int((data["height"] * 0.1) + 0.999)
-            data["height"] = max(get_base_height(data["level"]), data["height"] - loss)
-        flavor_texts = [
-            "Your tower trembles in shame...",
-            "A mysterious wind rattles your shaft.",
-            "The stones weep quietly.",
-            "Your wizardhood feels... smaller.",
-            "The Tower laughs in ancient tongues."
-        ]
+    if attacker_data["height"] < opponent_data["height"] and opponent_data["height"] > 10:
+        await ctx.send(f"{attacker.display_name}, your tower is too small to challenge {opponent.display_name}.")
+        return
+
+    # 30/30/40 outcome logic
+    outcome = random.choices(
+        population=["attacker", "opponent", "tower"],
+        weights=[30, 30, 40],
+        k=1
+    )[0]
+
+    if outcome == "tower":
         embed = discord.Embed(
-            title="🗼 The Tower Strikes!",
-            description="Neither fighter proved worthy...\n\nBoth duelers lose 10% of their tower height.\n" + random.choice(flavor_texts),
-            color=discord.Color.gold()
+            title="🌩 The Tower Has Spoken...",
+            description=(
+                f"Both **{attacker.display_name}** and **{opponent.display_name}** lose.\n"
+                "The Tower demands tribute. Their towers crumble... and the mystery deepens. 🗿"
+            ),
+            color=0xFFD700  # Gold
         )
-        embed.set_footer(text="Wizards beware — the Tower is always watching.")
-        await ctx.send(embed=embed)
+        attacker_data["height"] = 10
+        opponent_data["height"] = 10
+
+    else:
+        winner = attacker if outcome == "attacker" else opponent
+        loser = opponent if outcome == "attacker" else attacker
+
+        winner_id = str(winner.id)
+        loser_id = str(loser.id)
+        winner_data = tower_data[winner_id]
+        loser_data = tower_data[loser_id]
+
+        stolen = round(loser_data["height"] * 0.10)
+        winner_data["height"] += stolen
+        loser_data["height"] = 10
+
+        embed = discord.Embed(
+            title=f"⚔️ Duel Result: {winner.display_name} Wins!",
+            description=(
+                f"🏆 **{winner.display_name}** absorbs **{stolen}ft** of tower energy!\n"
+                f"⚠️ **{loser.display_name}**'s tower crumbles down to **10ft**.\n"
+                f"🧱 {winner.display_name}'s tower now stands at **{winner_data['height']}ft**!"
+            ),
+            color=0x00FF00
+        )
+
+    # Save changes
+    with open("tower_data.json", "w") as f:
+        json.dump(tower_data, f, indent=2)
+
+    await ctx.send(embed=embed)
 
     update_leaderboard()
 
