@@ -79,6 +79,24 @@ async def on_message(message):
 async def on_reaction_add(reaction, user):
     if user.bot:
         return
+
+    user_id = str(user.id)
+
+    if user_id not in tower_data:
+        tower_data[user_id] = {"level": 1, "xp": 0, "height": 10}
+
+    user_data = tower_data[user_id]
+    user_data["xp"] += 3  # ✨ +3 XP per reaction
+
+    await handle_level_up(user, user_data, reaction.message.channel)
+
+    with open("tower_data.json", "w") as f:
+        json.dump(tower_data, f, indent=2)
+
+@bot.event
+async def on_reaction_add(reaction, user):
+    if user.bot:
+        return
     ensure_user(user)
     user_data[user.id]["xp"] += 1
     update_leaderboard()
@@ -215,5 +233,25 @@ update_leaderboard()
 @bot.command()
 async def faq(ctx):
     await ctx.send("Welcome to Tower of Power! Message or react to grow your tower...")
+
+async def handle_level_up(user, user_data, channel):
+    level = user_data["level"]
+    xp_needed = min(50 + (level - 1) * 50, 500)
+
+    if user_data["xp"] >= xp_needed:
+        user_data["xp"] -= xp_needed
+        user_data["level"] += 1
+        user_data["height"] += 3
+
+        title = get_title_for_level(user_data["level"])
+        flavor = get_flavor_for_level(user_data["level"])
+
+        embed = discord.Embed(
+            title=f"🧙‍♂️ {user.display_name} Leveled Up!",
+            description=f"**{title} [Lv. {user_data['level']}]** — Tower Height: **{user_data['height']}ft**\n"
+                        f"XP reset to `{user_data['xp']}`\n\n*“{flavor}”*",
+            color=0x9370DB
+        )
+        await channel.send(embed=embed)
 
 bot.run(DISCORD_TOKEN)
