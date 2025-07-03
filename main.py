@@ -160,6 +160,12 @@ async def duel(ctx, target: discord.Member):
 
     update_leaderboard()
 
+update_leaderboard()
+
+import os
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+client.run(DISCORD_TOKEN)
+
 @bot.command()
 async def faq(ctx):
     await ctx.send("Welcome to Tower of Power! Message or react to grow your tower. Duel others to absorb their height. Levels increase your tower. Anyone can challenge 3rd place, and 2nd place can challenge 1st. Use !duel @user and !towerstats to play.")
