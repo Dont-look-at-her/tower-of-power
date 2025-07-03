@@ -194,31 +194,32 @@ async def duel(ctx, opponent: discord.Member):
         attacker_data["height"] = 10
         opponent_data["height"] = 10
 
-    else:
-        winner = attacker if outcome == "attacker" else opponent
-        loser = opponent if outcome == "attacker" else attacker
+  else:
+    winner = attacker if outcome == "attacker" else opponent
+    loser = opponent if outcome == "attacker" else attacker
 
-        winner_id = str(winner.id)
-        loser_id = str(loser.id)
-        winner_data = tower_data[winner_id]
-        loser_data = tower_data[loser_id]
+    winner_id = str(winner.id)
+    loser_id = str(loser.id)
+    winner_data = tower_data[winner_id]
+    loser_data = tower_data[loser_id]
 
-        stolen = round(loser_data["height"] * 0.10)
-        winner_data["height"] += stolen
-        loser_data["height"] = 10
+    stolen = round(loser_data["height"] * 0.10)
+    winner_data["height"] += stolen
+    loser_data["height"] = 10
 
-        winner_data["xp"] += 5  # 🏆 +5 XP for winning duel
-        await handle_level_up(winner, winner_data, ctx.channel)
+    winner_data["xp"] += 5  # 🏆 +5 XP for winning duel
+    await handle_level_up(winner, winner_data, ctx.channel)
 
-        embed = discord.Embed(
-            title=f"⚔️ Duel Result: {winner.display_name} Wins!",
-            description=(
-                f"🏆 **{winner.display_name}** absorbs **{stolen}ft** of tower energy!\n"
-                f"⚠️ **{loser.display_name}**'s tower crumbles down to **10ft**.\n"
-                f"🧱 {winner.display_name}'s tower now stands at **{winner_data['height']}ft**!"
-            ),
-            color=0x00FF00
-        )
+    embed = discord.Embed(
+        title=f"⚔️ Duel Result: {winner.display_name} Wins!",
+        description=(
+            f"🏆 **{winner.display_name}** absorbs **{stolen}ft** of tower energy!\n"
+            f"⚠️ **{loser.display_name}**'s tower crumbles down to **10ft**.\n"
+            f"🧱 {winner.display_name}'s tower now stands at **{winner_data['height']}ft**!"
+        ),
+        color=0x00FF00
+    )
+
 
     # Save changes
     with open("tower_data.json", "w") as f:
