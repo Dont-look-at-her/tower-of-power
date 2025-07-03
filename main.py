@@ -80,15 +80,31 @@ async def on_reaction_add(reaction, user):
     user_data[user.id]["xp"] += 1
     update_leaderboard()
 
-@bot.command()
-async def towerstats(ctx):
-    ensure_user(ctx.author)
-    user = user_data[ctx.author.id]
+@bot.command(name='towerstats')
+async def tower_stats(ctx, member: discord.Member = None):
+    user = member or ctx.author  # Use mentioned member or default to author
+    user_id = str(user.id)
+
+    # Check if the user is registered
+    if user_id not in tower_data:
+        await ctx.send(f"{user.display_name} hasn't built a tower yet.")
+        return
+
+    user_data = tower_data[user_id]
+    level = user_data.get("level", 1)
+    xp = user_data.get("xp", 0)
+    height = user_data.get("height", 5)
+
+    title = get_title_for_level(level)
+    flavor = get_flavor_for_level(level)
+
     embed = discord.Embed(
-        title=f"📊 {ctx.author.display_name}'s Tower Stats",
-        description=f"**Level:** {user['level']}\n**XP:** {user['xp']}\n**Height:** {user['height']}ft\n**Title:** {get_level_title(user['level'])}",
-        color=discord.Color.blue()
+        title=f"{user.display_name}'s Tower Stats",
+        description=f"🧙‍♂️ **{title} [Lv. {level}]** — Tower Height: **{height}ft**\n"
+                    f"XP: `{xp}`\n\n*“{flavor}”*",
+        color=0x9370DB  # Purple
     )
+    embed.set_footer(text="The Tower watches... always.")
     await ctx.send(embed=embed)
 
 @bot.command()
