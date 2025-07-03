@@ -1,1 +1,1 @@
-discord.py==2.3.2 --no-binary :all:
+discord.py==2.3.2
