@@ -1,17 +1,1 @@
-Dueling Mechanic
-
--When a winner takes the height of the loser in a battle the winner only takes the height that the loser has gained, not every 
-foot the tower is. 
-
--XP and level of member should NOT reset when they lose. The tower resets to the height that equates with their level. 
-
-
-
-
-New duel odds:
-	Each player has a 30% chance of winning, leaving the other 40% for the tower to beat them both and gain 10% of each of their 
-height rounded up to the nearest whole number. The Bot should say something menacing when it wins. 
-
-
-
-XP SHOULD ONLY BE EARNED THROUGH MESSAGING AND REACTING!!!!!!!
+discord.py
