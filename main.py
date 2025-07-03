@@ -1,4 +1,3 @@
-
 import discord
 from discord.ext import commands
 import os
@@ -6,14 +5,7 @@ import random
 import asyncio
 from datetime import datetime
 
-intents = discord.Intents.default()
-intents.messages = True
-intents.message_content = True  # Needed for reading messages
-
-client = commands.Bot(command_prefix='!', intents=intents)
-
-TOKEN = os.getenv("DISCORD_TOKEN")
-
+# Intents setup
 intents = discord.Intents.default()
 intents.messages = True
 intents.message_content = True
@@ -21,6 +13,10 @@ intents.reactions = True
 intents.guilds = True
 intents.members = True
 
+# Load token
+DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
+
+# Create bot instance
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 user_data = {}
@@ -168,11 +164,7 @@ async def duel(ctx, target: discord.Member):
 
 update_leaderboard()
 
-import os
-
-DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-client.run(DISCORD_TOKEN)
-
-@bot.command()
 async def faq(ctx):
     await ctx.send("Welcome to Tower of Power! Message or react to grow your tower. Duel others to absorb their height. Levels increase your tower. Anyone can challenge 3rd place, and 2nd place can challenge 1st. Use !duel @user and !towerstats to play.")
+
+bot.run(DISCORD_TOKEN)
