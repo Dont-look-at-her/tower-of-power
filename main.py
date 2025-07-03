@@ -80,6 +80,8 @@ async def on_reaction_add(reaction, user):
     user_data[user.id]["xp"] += 1
     update_leaderboard()
 
+tower_data = {}
+
 @bot.command(name='towerstats')
 async def tower_stats(ctx, member: discord.Member = None):
     user = member or ctx.author  # Use mentioned member or default to author
