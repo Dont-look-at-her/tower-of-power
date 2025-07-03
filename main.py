@@ -4,6 +4,7 @@ from discord.ext import commands
 import os
 import random
 import asyncio
+from datetime import datetime
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 
@@ -89,6 +90,22 @@ async def towerstats(ctx):
     await ctx.send(embed=embed)
 
 @bot.command()
+async def leaderboard(ctx):
+    update_leaderboard()
+    embed = discord.Embed(
+        title="🏆 Tower Leaderboard",
+        color=discord.Color.gold(),
+        description=""
+    )
+    medals = ["🥇", "🥈", "🥉"]
+    for i, (user_id, data) in enumerate(leaderboard[:10]):
+        user = await bot.fetch_user(user_id)
+        medal = medals[i] if i < 3 else f"{i+1}️⃣"
+        embed.description += f"{medal} {user.display_name} — {data['height']}ft (Lv. {data['level']})\n"
+    embed.set_footer(text=f"Updated just now • {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC")
+    await ctx.send(embed=embed)
+
+@bot.command()
 async def duel(ctx, target: discord.Member):
     challenger = ctx.author
     if target.bot or challenger == target:
@@ -126,11 +143,19 @@ async def duel(ctx, target: discord.Member):
             data = user_data[member.id]
             loss = int((data["height"] * 0.1) + 0.999)
             data["height"] = max(get_base_height(data["level"]), data["height"] - loss)
+        flavor_texts = [
+            "Your tower trembles in shame...",
+            "A mysterious wind rattles your shaft.",
+            "The stones weep quietly.",
+            "Your wizardhood feels... smaller.",
+            "The Tower laughs in ancient tongues."
+        ]
         embed = discord.Embed(
             title="🗼 The Tower Strikes!",
-            description="Both duelers lose 10% of their height... The Tower demands balance.",
-            color=discord.Color.dark_gold()
+            description="Neither fighter proved worthy...\n\nBoth duelers lose 10% of their tower height.\n" + random.choice(flavor_texts),
+            color=discord.Color.gold()
         )
+        embed.set_footer(text="Wizards beware — the Tower is always watching.")
         await ctx.send(embed=embed)
 
     update_leaderboard()
@@ -138,4 +163,3 @@ async def duel(ctx, target: discord.Member):
 @bot.command()
 async def faq(ctx):
     await ctx.send("Welcome to Tower of Power! Message or react to grow your tower. Duel others to absorb their height. Levels increase your tower. Anyone can challenge 3rd place, and 2nd place can challenge 1st. Use !duel @user and !towerstats to play.")
-
