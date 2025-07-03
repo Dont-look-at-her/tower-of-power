@@ -1,17 +1,18 @@
-
+import os
 import discord
 from discord.ext import commands
-import os
 
 intents = discord.Intents.default()
-intents.message_content = True
+intents.messages = True
+intents.guilds = True
+intents.reactions = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
 async def on_ready():
-    print(f'{bot.user} has connected to Discord!')
+    print(f"Logged in as {bot.user}")
 
 @bot.command()
 async def faq(ctx):
