@@ -189,6 +189,9 @@ async def duel(ctx, opponent: discord.Member):
         winner_data["height"] += stolen
         loser_data["height"] = 10
 
+        winner_data["xp"] += 5  # 🏆 +5 XP for winning duel
+await handle_level_up(winner, winner_data, ctx.channel)
+
         embed = discord.Embed(
             title=f"⚔️ Duel Result: {winner.display_name} Wins!",
             description=(
