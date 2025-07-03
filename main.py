@@ -164,7 +164,7 @@ update_leaderboard()
 
 import os
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN")
-client.run(DISCORD_TOKEN)
+client.run(MTM4ODc0MDU4MDg0NjIwNzAwNg.GYBZgs.5rXoSoS_XuFf_pxI5LsNCQbYzRmGCj9oVaQva0)
 
 @bot.command()
 async def faq(ctx):
