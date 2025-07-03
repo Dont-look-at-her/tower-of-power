@@ -231,7 +231,6 @@ await handle_level_up(winner, winner_data, ctx.channel)
 update_leaderboard()
 
 @bot.command()
-
 async def handle_level_up(user, user_data, channel):
     level = user_data["level"]
     xp_needed = min(50 + (level - 1) * 50, 500)
@@ -245,7 +244,7 @@ async def handle_level_up(user, user_data, channel):
         flavor = get_flavor_for_level(user_data["level"])
 
         embed = discord.Embed(  # ✅ Fixed indent here
-            title=f"🧙‍♂️ {user.display_name} Leveled Up!",
+        title=f"🧙‍♂️ {user.display_name} Leveled Up!",
             description=f"**{title} [Lv. {user_data['level']}]** — Tower Height: **{user_data['height']}ft**\n"
                         f"XP reset to `{user_data['xp']}`\n\n*“{flavor}”*",
             color=0x9370DB
