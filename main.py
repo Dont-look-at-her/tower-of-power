@@ -81,6 +81,13 @@ async def on_reaction_add(reaction, user):
     update_leaderboard()
 
 tower_data = {}
+import os
+import json
+
+# Load tower_data from file if it exists
+if os.path.exists("tower_data.json"):
+    with open("tower_data.json", "r") as f:
+        tower_data = json.load(f)
 
 @bot.command(name='towerstats')
 async def tower_stats(ctx, member: discord.Member = None):
