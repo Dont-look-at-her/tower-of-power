@@ -17,18 +17,13 @@ async def on_ready():
 async def faq(ctx):
     embed = discord.Embed(
         title="📜 Tower of Power — FAQ",
-        description="Welcome to Tower of Power!
-"
-                    "💬 Message or 🔁 React to grow your tower.
-"
-                    "⚔️ Duel others to absorb their height.
-"
-                    "📈 Levels increase your tower.
-"
-                    "🎯 2nd place can challenge 1st.
-"
-                    "🧙‍♂️ When the Tower wins... no one is safe.
-",
+        description=(
+            "💬 Message or 🧙‍♂️ React to grow your tower.\n"
+            "⚔️ Duel others to absorb their height.\n"
+            "🧱 Levels increase your tower.\n"
+            "🎯 2nd place can challenge 1st.\n"
+            "🔮 When the Tower wins… no one is safe."
+        ),
         color=0x9b59b6
     )
     await ctx.send(embed=embed)
