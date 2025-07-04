@@ -163,8 +163,9 @@ async def duel(ctx, opponent: discord.Member):
 
     leaderboard = get_leaderboard()
     top_users = [entry[1] for entry in leaderboard]
-    challenger_rank = top_users.index(challenger_id) + 1 if challenger_id in top_users else None
-    opponent_rank = top_users.index(opponent_id) + 1 if opponent_id in top_users else None
+    challenger_rank = next((i + 1 for i, uid in enumerate(top_users) if uid == challenger_id), None)
+    opponent_rank = next((i + 1 for i, uid in enumerate(top_users) if uid == opponent_id), None)
+
 
     # Duel eligibility logic
     valid_duel = False
