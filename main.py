@@ -1,6 +1,7 @@
 
 import discord
 from discord.ext import commands, tasks
+import json
 import os
 import random
 import asyncio
@@ -14,14 +15,23 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents)
 
-# Data store for player stats
-player_data = {}
+# Load player data from file if it exists
+if os.path.exists("player_data.json"):
+    with open("player_data.json", "r") as f:
+        player_data = json.load(f)
+else:
+    player_data = {}
 
-# XP and Level System Constants
+# XP/Level change complete
+save_data()
 BASE_XP = 50
 MAX_XP_PER_LEVEL = 500
 XP_PER_MESSAGE = 5
 XP_PER_REACTION = 2
+
+def save_data():
+    with open("player_data.json", "w") as f:
+        json.dump(player_data, f, indent=4)
 
 # Titles per level (some sample levels for flavor)
 titles = [
@@ -155,9 +165,29 @@ async def duel(ctx, opponent: discord.Member):
     challenger_rank = top_users.index(challenger_id) + 1 if challenger_id in top_users else None
     opponent_rank = top_users.index(opponent_id) + 1 if opponent_id in top_users else None
 
+ @bot.command()
+async def duel(ctx, opponent: discord.Member):
+    challenger_id = str(ctx.author.id)
+    opponent_id = str(opponent.id)
+
+    if challenger_id == opponent_id:
+        await ctx.send("You can't duel yourself, tower weirdo.")
+        return
+
+    if challenger_id not in player_data or opponent_id not in player_data:
+        await ctx.send("Both duelists must have towers. Send some messages first!")
+        return
+
+    challenger = player_data[challenger_id]
+    challenged = player_data[opponent_id]
+
+    leaderboard = get_leaderboard()
+    top_users = [entry[1] for entry in leaderboard]
+    challenger_rank = top_users.index(challenger_id) + 1 if challenger_id in top_users else None
+    opponent_rank = top_users.index(opponent_id) + 1 if opponent_id in top_users else None
+
     # Duel eligibility logic
     valid_duel = False
-
     if challenger['height'] >= challenged['height']:
         valid_duel = True
     elif opponent_rank == 3:
@@ -171,26 +201,57 @@ async def duel(ctx, opponent: discord.Member):
         await ctx.send("You can only duel someone with an equal or smaller tower — unless challenging the top 3 under special rules.")
         return
 
-    # Duel outcome
-    winner, loser = (challenger, challenged) if random.random() < 0.5 else (challenged, challenger)
-    winner_id, loser_id = (challenger_id, opponent_id) if winner == challenger else (opponent_id, challenger_id)
+    # Roll outcome: 30% challenger wins, 30% challenged wins, 40% Tower wins
+    roll = random.random()
+    if roll < 0.3:
+        winner = challenger
+        loser = challenged
+        winner_id = challenger_id
+        loser_id = opponent_id
+        tower_won = False
+    elif roll < 0.6:
+        winner = challenged
+        loser = challenger
+        winner_id = opponent_id
+        loser_id = challenger_id
+        tower_won = False
+    else:
+        winner = None
+        loser = challenger
+        loser_id = challenger_id
+        tower_won = True
 
     stolen_height = max(1, round(loser['height'] * 0.1))
-    winner['height'] += stolen_height
-    loser['height'] = max(5, loser['height'] - stolen_height)  # Only reduce height, not XP/level
 
-    if winner_id == str(ctx.author.id):
-        color = 0x2ecc71
-        desc = f"{ctx.author.display_name} has defeated {opponent.display_name} and stolen {stolen_height}ft of tower!"
+    if tower_won:
+        player_data[loser_id]['height'] = max(5, player_data[loser_id]['height'] - stolen_height)
+        save_data()
+        embed = discord.Embed(
+            title="🌩️ The Tower Strikes!",
+            description=(
+                f"The Tower has judged {ctx.author.display_name} unworthy.\n"
+                f"They lose {stolen_height}ft of their own tower."
+            ),
+            color=0xf1c40f
+        )
     else:
-        color = 0xe74c3c
-        desc = f"{ctx.author.display_name} was defeated by {opponent.display_name}! The Tower has claimed them..."
+        player_data[winner_id]['height'] += stolen_height
+        player_data[loser_id]['height'] = max(5, player_data[loser_id]['height'] - stolen_height)
+        save_data()
 
-    embed = discord.Embed(
-        title="⚔️ Duel Result",
-        description=desc,
-        color=color
-    )
+        if winner_id == challenger_id:
+            color = 0x2ecc71
+            desc = f"{ctx.author.display_name} has defeated {opponent.display_name} and stolen {stolen_height}ft of tower!"
+        else:
+            color = 0xe74c3c
+            desc = f"{ctx.author.display_name} was defeated by {opponent.display_name}! The Tower has claimed them..."
+
+        embed = discord.Embed(
+            title="⚔️ Duel Result",
+            description=desc,
+            color=color
+        )
+
     await ctx.send(embed=embed)
 
 @bot.command()
