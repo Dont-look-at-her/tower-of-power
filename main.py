@@ -112,19 +112,24 @@ async def on_reaction_add(reaction, user):
     data['xp'] += XP_PER_REACTION
 
 @bot.command()
-async def towerstats(ctx):
-    user_id = str(ctx.author.id)
+async def towerstats(ctx, member: discord.Member = None):
+    user = member or ctx.author
+    user_id = str(user.id)
+
     if user_id not in player_data:
-        await ctx.send("You haven't started building your tower yet! Send a message to begin.")
+        await ctx.send(f"{user.display_name} hasn't started building their tower yet! Send a message to begin.")
         return
 
     data = player_data[user_id]
-    xp_needed = calculate_xp_needed(data['level'])
+    level = data['level']
+    current_xp = data['xp']
+    height = data['height']
+    xp_needed = min(level * 50, 500)  # 50 XP per level, max 500
 
     embed = discord.Embed(
-        title=f"{ctx.author.display_name}'s Tower Stats",
-        description=f"**Level:** {data['level']}\n**XP:** {data['xp']}/{xp_needed}\n**Height:** {data['height']}ft",
-        color=0x3498db
+        title=f"{user.display_name}'s Tower Stats",
+        description=f"**Level:** {level}\n**XP:** {current_xp}/{xp_needed}\n**Height:** {height}ft",
+        color=0x3498db  # or use 0x9b59b6 for purple 💜
     )
     await ctx.send(embed=embed)
 
