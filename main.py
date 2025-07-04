@@ -75,9 +75,9 @@ async def on_message(message):
     data = player_data[user_id]
     data['xp'] += XP_PER_MESSAGE
 
-    xp_needed = calculate_xp_needed(data['level'])
-    if data['xp'] >= xp_needed:
-        data['xp'] -= xp_needed
+    leveled_up = False
+    while data['xp'] >= min(data['level'] * 50, 500):
+        data['xp'] -= min(data['level'] * 50, 500)
         data['level'] += 1
         data['height'] += 3
         data['first_reach_time'] = now
@@ -89,6 +89,7 @@ async def on_message(message):
             color=0x9b59b6
         )
         await message.channel.send(embed=embed)
+        leveled_up = True
 
     await bot.process_commands(message)
 
