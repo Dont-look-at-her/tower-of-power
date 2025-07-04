@@ -124,12 +124,12 @@ async def towerstats(ctx, member: discord.Member = None):
     level = data['level']
     current_xp = data['xp']
     height = data['height']
-    xp_needed = min(level * 50, 500)  # 50 XP per level, max 500
+    xp_needed = min(level * 50, 500)
 
     embed = discord.Embed(
         title=f"{user.display_name}'s Tower Stats",
         description=f"**Level:** {level}\n**XP:** {current_xp}/{xp_needed}\n**Height:** {height}ft",
-        color=0x3498db  # or use 0x9b59b6 for purple 💜
+        color=0x3498db
     )
     await ctx.send(embed=embed)
 
