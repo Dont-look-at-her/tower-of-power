@@ -149,21 +149,29 @@ async def duel(ctx, opponent: discord.Member):
     challenger_rank = top_users.index(challenger_id) + 1 if challenger_id in top_users else None
     opponent_rank = top_users.index(opponent_id) + 1 if opponent_id in top_users else None
 
-    if (challenger['height'] < challenged['height']
-        and not (opponent_rank == 3)
-        and not (challenger_rank == 3 and opponent_rank == 2)):
+    # Duel eligibility logic
+    valid_duel = False
+
+    if challenger['height'] >= challenged['height']:
+        valid_duel = True
+    elif opponent_rank == 3:
+        valid_duel = True
+    elif challenger_rank == 3 and opponent_rank == 2:
+        valid_duel = True
+    elif challenger_rank == 2 and opponent_rank == 1:
+        valid_duel = True
+
+    if not valid_duel:
         await ctx.send("You can only duel someone with an equal or smaller tower — unless challenging the top 3 under special rules.")
         return
 
+    # Duel outcome
     winner, loser = (challenger, challenged) if random.random() < 0.5 else (challenged, challenger)
     winner_id, loser_id = (challenger_id, opponent_id) if winner == challenger else (opponent_id, challenger_id)
 
     stolen_height = max(1, round(loser['height'] * 0.1))
     winner['height'] += stolen_height
-    loser['height'] = 5
-    loser['level'] = 1
-    loser['xp'] = 0
-    loser['first_reach_time'] = datetime.utcnow()
+    loser['height'] = max(5, loser['height'] - stolen_height)  # Only reduce height, not XP/level
 
     if winner_id == str(ctx.author.id):
         color = 0x2ecc71
