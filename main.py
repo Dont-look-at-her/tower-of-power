@@ -22,6 +22,10 @@ if os.path.exists("player_data.json"):
 else:
     player_data = {}
 
+def save_data():
+    with open("player_data.json", "w") as f:
+        json.dump(player_data, f, indent=4)
+
 # XP/Level change complete
 save_data()
 BASE_XP = 50
@@ -29,9 +33,6 @@ MAX_XP_PER_LEVEL = 500
 XP_PER_MESSAGE = 5
 XP_PER_REACTION = 2
 
-def save_data():
-    with open("player_data.json", "w") as f:
-        json.dump(player_data, f, indent=4)
 
 # Titles per level (some sample levels for flavor)
 titles = [
@@ -145,27 +146,6 @@ async def towerstats(ctx, member: discord.Member = None):
     await ctx.send(embed=embed)
 
 @bot.command()
-async def duel(ctx, opponent: discord.Member):
-    challenger_id = str(ctx.author.id)
-    opponent_id = str(opponent.id)
-
-    if challenger_id == opponent_id:
-        await ctx.send("You can't duel yourself, tower weirdo.")
-        return
-
-    if challenger_id not in player_data or opponent_id not in player_data:
-        await ctx.send("Both duelists must have towers. Send some messages first!")
-        return
-
-    challenger = player_data[challenger_id]
-    challenged = player_data[opponent_id]
-
-    leaderboard = get_leaderboard()
-    top_users = [entry[1] for entry in leaderboard]
-    challenger_rank = top_users.index(challenger_id) + 1 if challenger_id in top_users else None
-    opponent_rank = top_users.index(opponent_id) + 1 if opponent_id in top_users else None
-
- @bot.command()
 async def duel(ctx, opponent: discord.Member):
     challenger_id = str(ctx.author.id)
     opponent_id = str(opponent.id)
