@@ -27,7 +27,6 @@ def save_data():
         json.dump(player_data, f, indent=4)
 
 # XP/Level change complete
-save_data()
 BASE_XP = 50
 MAX_XP_PER_LEVEL = 500
 XP_PER_MESSAGE = 5
