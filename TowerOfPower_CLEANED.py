@@ -31,8 +31,6 @@ def save_data():
     with open("player_data.json", "w") as f:
         json.dump(player_data, f, indent=4, default=convert)
 
-        json.dump(player_data, f, indent=4)
-
 # XP/Level change complete
 BASE_XP = 50
 MAX_XP_PER_LEVEL = 500
