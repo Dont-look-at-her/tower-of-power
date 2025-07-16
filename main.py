@@ -1,1 +1,0 @@
-[full corrected main.py code with all @bot.command functions and bug fixes inserted here]
