@@ -157,12 +157,14 @@ async def add_xp(user, amount, channel):
             description=f"**{user.display_name}** has reached **Level {new_level}**!",
             color=0x00FF7F
         )
-        embed.add_field(name="New Title", value=f"*{title}*", inline=True)
-        embed.add_field(name="Tower Stats", value=f"**Tower Height:** {height}ft
-*"{flavor}"*")
-        await channel.send(embed=embed)
-    update_height_timestamp(user_id)
-    save_data()
+ embed.add_field(name="New Title", value=f"*{title}*", inline=True)
+embed.add_field(
+    name="Tower Stats",
+    value=f"**Tower Height:** {height}ft\n*{flavor}*"
+)
+await channel.send(embed=embed)
+update_height_timestamp(user_id)
+save_data()
 
 @bot.event
 async def on_ready():
