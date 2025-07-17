@@ -154,6 +154,122 @@ async def towerstats(ctx):
     embed.add_field(name="Duels", value=f"Wins: {user['wins']} | Losses: {user['losses']}", inline=True)
     await ctx.send(embed=embed)
 
+@bot.command(name='duel')
+async def duel(ctx, opponent: discord.Member):
+    attacker_id = str(ctx.author.id)
+    defender_id = str(opponent.id)
+
+    if attacker_id not in player_data or defender_id not in player_data:
+        await ctx.send("Both players must have towers to duel.")
+        return
+
+    attacker = player_data[attacker_id]
+    defender = player_data[defender_id]
+
+    attacker_height = attacker.get("height", 5)
+    defender_height = defender.get("height", 5)
+
+    # Duel eligibility check
+    leaderboard = sorted(player_data.items(), key=lambda x: (-x[1]["height"], x[1].get("timestamp", "")))
+    attacker_rank = next((i for i, (uid, _) in enumerate(leaderboard, 1) if uid == attacker_id), None)
+    defender_rank = next((i for i, (uid, _) in enumerate(leaderboard, 1) if uid == defender_id), None)
+
+    if (
+        defender_height > attacker_height
+        and not (defender_rank == 3 or attacker_rank == 3 and defender_rank == 2)
+    ):
+        await ctx.send("You can only challenge someone with equal or lower height — unless you're 3rd place or they're 2nd.")
+        return
+
+    outcome = random.choices(["attacker", "defender", "tower"], weights=[0.4, 0.4, 0.2])[0]
+
+    loser = winner = None
+    if outcome == "attacker":
+        winner, loser = attacker, defender
+        winner_id, loser_id = attacker_id, defender_id
+    elif outcome == "defender":
+        winner, loser = defender, attacker
+        winner_id, loser_id = defender_id, attacker_id
+    else:
+        # Tower wins
+        winner = {"name": "The Tower"}
+        loser = attacker
+        loser_id = attacker_id
+        loss = round(loser["height"] * 0.10)
+        loser["height"] -= loss
+        loser["losses"] = loser.get("losses", 0) + 1
+        await ctx.send(f"🗼 The Tower has spoken... {ctx.author.display_name} was struck down and lost {loss}ft!")
+        save_data()
+        return
+
+    transfer = round(loser["height"] * 0.10)
+    winner["height"] += transfer
+    loser["height"] -= transfer
+    winner["wins"] = winner.get("wins", 0) + 1
+    loser["losses"] = loser.get("losses", 0) + 1
+
+    await ctx.send(f"{ctx.guild.get_member(int(winner_id)).mention} defeated {ctx.guild.get_member(int(loser_id)).mention} and stole {transfer}ft!")
+
+    save_data()
+
+@bot.command(name='duel')
+async def duel(ctx, opponent: discord.Member):
+    attacker_id = str(ctx.author.id)
+    defender_id = str(opponent.id)
+
+    if attacker_id not in player_data or defender_id not in player_data:
+        await ctx.send("Both players must have towers to duel.")
+        return
+
+    attacker = player_data[attacker_id]
+    defender = player_data[defender_id]
+
+    attacker_height = attacker.get("height", 5)
+    defender_height = defender.get("height", 5)
+
+    # Duel eligibility check
+    leaderboard = sorted(player_data.items(), key=lambda x: (-x[1]["height"], x[1].get("timestamp", "")))
+    attacker_rank = next((i for i, (uid, _) in enumerate(leaderboard, 1) if uid == attacker_id), None)
+    defender_rank = next((i for i, (uid, _) in enumerate(leaderboard, 1) if uid == defender_id), None)
+
+    if (
+        defender_height > attacker_height
+        and not (defender_rank == 3 or attacker_rank == 3 and defender_rank == 2)
+    ):
+        await ctx.send("You can only challenge someone with equal or lower height — unless you're 3rd place or they're 2nd.")
+        return
+
+    outcome = random.choices(["attacker", "defender", "tower"], weights=[0.4, 0.4, 0.2])[0]
+
+    loser = winner = None
+    if outcome == "attacker":
+        winner, loser = attacker, defender
+        winner_id, loser_id = attacker_id, defender_id
+    elif outcome == "defender":
+        winner, loser = defender, attacker
+        winner_id, loser_id = defender_id, attacker_id
+    else:
+        # Tower wins
+        winner = {"name": "The Tower"}
+        loser = attacker
+        loser_id = attacker_id
+        loss = round(loser["height"] * 0.10)
+        loser["height"] -= loss
+        loser["losses"] = loser.get("losses", 0) + 1
+        await ctx.send(f"🗼 The Tower has spoken... {ctx.author.display_name} was struck down and lost {loss}ft!")
+        save_data()
+        return
+
+    transfer = round(loser["height"] * 0.10)
+    winner["height"] += transfer
+    loser["height"] -= transfer
+    winner["wins"] = winner.get("wins", 0) + 1
+    loser["losses"] = loser.get("losses", 0) + 1
+
+    await ctx.send(f"{ctx.guild.get_member(int(winner_id)).mention} defeated {ctx.guild.get_member(int(loser_id)).mention} and stole {transfer}ft!")
+
+    save_data()
+
 @bot.command()
 async def resetme(ctx):
     db.remove(Player.id == ctx.author.id)
