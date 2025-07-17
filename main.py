@@ -95,7 +95,7 @@ async def send_levelup_message(member):
         user = get_player(member.id)
         embed = discord.Embed(
             title=f"🎉 {member.display_name} leveled up!",
-            description = f"**Level {user['level']} – {get_title(user['level'])}**\n🏯 Tower Height: {user['height']}ft"
+            description=f"**Level {user['level']} – {get_title(user['level'])}**\n🏯 Tower Height: {user['height']}ft",
             color=0x9370DB
         )
         await channel.send(embed=embed)
