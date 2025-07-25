@@ -196,9 +196,15 @@ async def towerstats(ctx, target: discord.Member = None):
     if target:
         user = get_player(target.id)
         username = target.display_name
+        user_id = target.id
     else:
         user = get_player(ctx.author.id)
         username = ctx.author.display_name
+        user_id = ctx.author.id
+    
+    # Update level based on current XP
+    user = calculate_level_and_height(user)
+    save_player(user)
     
     xp_needed = get_level_xp(user["level"])
     embed = discord.Embed(title=f"🏗️ {username}'s Tower", color=0x00BFFF)
@@ -210,7 +216,14 @@ async def towerstats(ctx, target: discord.Member = None):
 
 @bot.command()
 async def leaderboard(ctx):
-    all_players = get_all_players()
+    # Update all players' levels based on their current XP
+    all_players = []
+    for player in db.all():
+        player = calculate_level_and_height(player)
+        save_player(player)
+        all_players.append(player)
+    
+    all_players = sorted(all_players, key=lambda x: (-x.get("height", 5), x.get("id", 0)))
     
     if not all_players:
         await ctx.send("📊 No towers have been built yet! Start chatting to gain XP.")
