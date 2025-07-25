@@ -65,11 +65,25 @@ def get_player(user_id):
             "id": int(user_id),
             "xp": 0,
             "level": 1,
-            "height": 5,
+            "base_height": 5,  # Base height (never changes)
+            "bonus_height": 0,  # Height from duels
             "wins": 0,
             "losses": 0
         }
         db.insert(user)
+    
+    # Always calculate total height from components
+    if "height" not in user or "base_height" not in user:
+        # Migration for old data format
+        user["base_height"] = 5
+        user["bonus_height"] = user.get("height", 5) - 5
+        if user["bonus_height"] < 0:
+            user["bonus_height"] = 0
+    
+    # Calculate total height: base + bonus + level progression
+    level_height = (user.get("level", 1) - 1) * HEIGHT_PER_LEVEL
+    user["height"] = user.get("base_height", 5) + user.get("bonus_height", 0) + level_height
+    
     return user
 
 def save_player(user_data):
@@ -91,8 +105,12 @@ def try_level_up(user_id):
     while user["xp"] >= get_level_xp(user["level"]):
         user["xp"] -= get_level_xp(user["level"])
         user["level"] += 1
-        user["height"] += HEIGHT_PER_LEVEL
         level_up = True
+    
+    # Recalculate total height after level change
+    level_height = (user["level"] - 1) * HEIGHT_PER_LEVEL
+    user["height"] = user.get("base_height", 5) + user.get("bonus_height", 0) + level_height
+    
     save_player(user)
     return level_up
 
@@ -291,9 +309,14 @@ async def duel(ctx, opponent: discord.Member):
         outcome = random.choice(["attacker", "defender"])
 
     if outcome == "tower":
-        # Tower wins - attacker loses height
+        # Tower wins - attacker loses bonus height only
         loss = round(attacker["height"] * 0.10)
-        attacker["height"] = max(5, attacker["height"] - loss)
+        attacker["bonus_height"] = max(0, attacker.get("bonus_height", 0) - loss)
+        
+        # Recalculate total height
+        level_height = (attacker.get("level", 1) - 1) * HEIGHT_PER_LEVEL
+        attacker["height"] = attacker.get("base_height", 5) + attacker["bonus_height"] + level_height
+        
         attacker["losses"] = attacker.get("losses", 0) + 1
         save_player(attacker)
         
@@ -365,6 +388,10 @@ if __name__ == "__main__":
             print("❌ Invalid token. Please check your Discord bot token.")
         except KeyboardInterrupt:
             print("\n🛑 Bot stopped by user")
+            cleanup()
+        except Exception as e:
+            print(f"❌ Failed to start bot: {e}")
+            cleanup()
             cleanup()
         except Exception as e:
             print(f"❌ Failed to start bot: {e}")
