@@ -200,10 +200,6 @@ async def towerstats(ctx, target: discord.Member = None):
         user = get_player(ctx.author.id)
         username = ctx.author.display_name
     
-    # Ensure data is current
-    user = calculate_level_and_height(user)
-    save_player(user)
-    
     xp_needed = get_level_xp(user["level"])
     embed = discord.Embed(title=f"🏗️ {username}'s Tower", color=0x00BFFF)
     embed.add_field(name="Title", value=f"**{get_title(user['level'])}**", inline=True)
@@ -214,14 +210,7 @@ async def towerstats(ctx, target: discord.Member = None):
 
 @bot.command()
 async def leaderboard(ctx):
-    # Refresh all player data first
-    all_players = []
-    for player in db.all():
-        player = calculate_level_and_height(player)
-        save_player(player)
-        all_players.append(player)
-    
-    all_players = sorted(all_players, key=lambda x: (-x.get("height", 5), x.get("id", 0)))
+    all_players = get_all_players()
     
     if not all_players:
         await ctx.send("📊 No towers have been built yet! Start chatting to gain XP.")
@@ -267,10 +256,6 @@ async def duel(ctx, opponent: discord.Member):
 
     attacker = get_player(attacker_id)
     defender = get_player(defender_id)
-
-    # Ensure current data
-    attacker = calculate_level_and_height(attacker)
-    defender = calculate_level_and_height(defender)
 
     attacker_height = attacker.get("height", 5)
     defender_height = defender.get("height", 5)
