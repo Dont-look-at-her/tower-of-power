@@ -81,8 +81,9 @@ def get_all_players():
     return sorted(db.all(), key=lambda x: (-x.get("height", 5), x.get("id", 0)))
 
 def calculate_level_and_height(user_data):
-    """Calculate correct level and height from XP"""
+    """Calculate correct level from XP but preserve height from duels"""
     xp = user_data["xp"]
+    old_level = user_data.get("level", 1)
     level = 1
     
     # Calculate level from XP
@@ -95,14 +96,10 @@ def calculate_level_and_height(user_data):
     user_data["level"] = level
     user_data["xp"] = temp_xp
     
-    # Calculate height: preserve any bonus height from duels, add level progression
-    base_height = 5
-    bonus_height = user_data.get("height", 5) - 5 - ((user_data.get("level", 1) - 1) * HEIGHT_PER_LEVEL)
-    if bonus_height < 0:
-        bonus_height = 0
-    
-    level_height = (level - 1) * HEIGHT_PER_LEVEL
-    user_data["height"] = base_height + bonus_height + level_height
+    # Only adjust height if level changed (don't override duel height changes)
+    if level != old_level:
+        height_change = (level - old_level) * HEIGHT_PER_LEVEL
+        user_data["height"] = user_data.get("height", 5) + height_change
     
     return user_data
 
