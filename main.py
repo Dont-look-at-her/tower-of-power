@@ -18,7 +18,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix='!', intents=intents, help_command=None)
 
-# Database setup with better file handling
+# Database setup
 db = TinyDB('player_data.json')
 Player = Query()
 
@@ -65,54 +65,56 @@ def get_player(user_id):
             "id": int(user_id),
             "xp": 0,
             "level": 1,
-            "base_height": 5,  # Base height (never changes)
-            "bonus_height": 0,  # Height from duels
+            "height": 5,
             "wins": 0,
             "losses": 0
         }
         db.insert(user)
-    
-    # Always calculate total height from components
-    if "height" not in user or "base_height" not in user:
-        # Migration for old data format
-        user["base_height"] = 5
-        user["bonus_height"] = user.get("height", 5) - 5
-        if user["bonus_height"] < 0:
-            user["bonus_height"] = 0
-    
-    # Calculate total height: base + bonus + level progression
-    level_height = (user.get("level", 1) - 1) * HEIGHT_PER_LEVEL
-    user["height"] = user.get("base_height", 5) + user.get("bonus_height", 0) + level_height
-    
     return user
 
 def save_player(user_data):
-    """Save player data and force file sync"""
+    """Save player data"""
     db.upsert(user_data, Player.id == int(user_data["id"]))
-    try:
-        db.storage.flush()  # Force write to disk if available
-    except AttributeError:
-        # TinyDB doesn't have flush method, data is auto-saved
-        pass
 
 def get_all_players():
     """Get all players sorted by height (desc) then by insertion order"""
     return sorted(db.all(), key=lambda x: (-x.get("height", 5), x.get("id", 0)))
 
+def calculate_level_and_height(user_data):
+    """Calculate correct level and height from XP"""
+    xp = user_data["xp"]
+    level = 1
+    
+    # Calculate level from XP
+    temp_xp = xp
+    while temp_xp >= get_level_xp(level):
+        temp_xp -= get_level_xp(level)
+        level += 1
+    
+    # Update level and remaining XP
+    user_data["level"] = level
+    user_data["xp"] = temp_xp
+    
+    # Calculate height: preserve any bonus height from duels, add level progression
+    base_height = 5
+    bonus_height = user_data.get("height", 5) - 5 - ((user_data.get("level", 1) - 1) * HEIGHT_PER_LEVEL)
+    if bonus_height < 0:
+        bonus_height = 0
+    
+    level_height = (level - 1) * HEIGHT_PER_LEVEL
+    user_data["height"] = base_height + bonus_height + level_height
+    
+    return user_data
+
 def try_level_up(user_id):
     user = get_player(user_id)
-    level_up = False
-    while user["xp"] >= get_level_xp(user["level"]):
-        user["xp"] -= get_level_xp(user["level"])
-        user["level"] += 1
-        level_up = True
+    old_level = user["level"]
     
-    # Recalculate total height after level change
-    level_height = (user["level"] - 1) * HEIGHT_PER_LEVEL
-    user["height"] = user.get("base_height", 5) + user.get("bonus_height", 0) + level_height
+    # Recalculate level and height
+    user = calculate_level_and_height(user)
     
     save_player(user)
-    return level_up
+    return user["level"] > old_level
 
 async def send_levelup_message(member):
     channel = discord.utils.get(member.guild.text_channels, name=LEVEL_CHANNEL_NAME)
@@ -127,7 +129,6 @@ async def send_levelup_message(member):
 
 # Graceful shutdown handling
 def cleanup():
-    """Cleanup function to ensure data is saved"""
     print("💾 Ensuring all data is saved...")
     db.close()
     print("✅ Database closed safely")
@@ -202,6 +203,10 @@ async def towerstats(ctx, target: discord.Member = None):
         user = get_player(ctx.author.id)
         username = ctx.author.display_name
     
+    # Ensure data is current
+    user = calculate_level_and_height(user)
+    save_player(user)
+    
     xp_needed = get_level_xp(user["level"])
     embed = discord.Embed(title=f"🏗️ {username}'s Tower", color=0x00BFFF)
     embed.add_field(name="Title", value=f"**{get_title(user['level'])}**", inline=True)
@@ -212,7 +217,14 @@ async def towerstats(ctx, target: discord.Member = None):
 
 @bot.command()
 async def leaderboard(ctx):
-    all_players = get_all_players()
+    # Refresh all player data first
+    all_players = []
+    for player in db.all():
+        player = calculate_level_and_height(player)
+        save_player(player)
+        all_players.append(player)
+    
+    all_players = sorted(all_players, key=lambda x: (-x.get("height", 5), x.get("id", 0)))
     
     if not all_players:
         await ctx.send("📊 No towers have been built yet! Start chatting to gain XP.")
@@ -259,6 +271,10 @@ async def duel(ctx, opponent: discord.Member):
     attacker = get_player(attacker_id)
     defender = get_player(defender_id)
 
+    # Ensure current data
+    attacker = calculate_level_and_height(attacker)
+    defender = calculate_level_and_height(defender)
+
     attacker_height = attacker.get("height", 5)
     defender_height = defender.get("height", 5)
 
@@ -300,23 +316,19 @@ async def duel(ctx, opponent: discord.Member):
             await ctx.send("❌ You can only challenge someone with equal or smaller tower height.")
         return
 
-    # Duel outcomes with weights - balanced 50/50 between players, 20% tower intervention
-    tower_chance = 0.2
-    if random.random() < tower_chance:
-        outcome = "tower"
+    # Duel outcomes - 50% attacker, 30% defender, 20% tower
+    rand = random.random()
+    if rand < 0.5:
+        outcome = "attacker"
+    elif rand < 0.8:
+        outcome = "defender"
     else:
-        # 50/50 chance between attacker and defender for the remaining 80%
-        outcome = random.choice(["attacker", "defender"])
+        outcome = "tower"
 
     if outcome == "tower":
-        # Tower wins - attacker loses bonus height only
+        # Tower wins - attacker loses height
         loss = round(attacker["height"] * 0.10)
-        attacker["bonus_height"] = max(0, attacker.get("bonus_height", 0) - loss)
-        
-        # Recalculate total height
-        level_height = (attacker.get("level", 1) - 1) * HEIGHT_PER_LEVEL
-        attacker["height"] = attacker.get("base_height", 5) + attacker["bonus_height"] + level_height
-        
+        attacker["height"] = max(5, attacker["height"] - loss)
         attacker["losses"] = attacker.get("losses", 0) + 1
         save_player(attacker)
         
@@ -388,10 +400,6 @@ if __name__ == "__main__":
             print("❌ Invalid token. Please check your Discord bot token.")
         except KeyboardInterrupt:
             print("\n🛑 Bot stopped by user")
-            cleanup()
-        except Exception as e:
-            print(f"❌ Failed to start bot: {e}")
-            cleanup()
             cleanup()
         except Exception as e:
             print(f"❌ Failed to start bot: {e}")
