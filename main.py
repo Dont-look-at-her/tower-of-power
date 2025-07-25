@@ -282,8 +282,13 @@ async def duel(ctx, opponent: discord.Member):
             await ctx.send("❌ You can only challenge someone with equal or smaller tower height.")
         return
 
-    # Duel outcomes with weights
-    outcome = random.choices(["attacker", "defender", "tower"], weights=[0.4, 0.4, 0.2])[0]
+    # Duel outcomes with weights - balanced 50/50 between players, 20% tower intervention
+    tower_chance = 0.2
+    if random.random() < tower_chance:
+        outcome = "tower"
+    else:
+        # 50/50 chance between attacker and defender for the remaining 80%
+        outcome = random.choice(["attacker", "defender"])
 
     if outcome == "tower":
         # Tower wins - attacker loses height
